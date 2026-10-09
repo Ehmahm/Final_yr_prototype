@@ -25,3 +25,10 @@ models/*.onnx
 # OS
 .DS_Store
 Thumbs.db
+
+__pycache__/
+*.pyc
+*.pyo
+Final_yr_prototype/
+Final_yr_prototype/
+**/.git/
