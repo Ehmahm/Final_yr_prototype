@@ -1,0 +1,15 @@
+{
+  "onnx_size_kb": 2.197265625,
+  "pytorch_latency_ms": 0.8205229000013787,
+  "onnx_latency_ms": 0.19779109999944922,
+  "onnx_speedup": 4.148431855648023,
+  "end_to_end_latency_ms": 3.364941000036197,
+  "opset_version": 17,
+  "input_shape": [
+    1,
+    24
+  ],
+  "output_shape": [
+    1
+  ]
+}
