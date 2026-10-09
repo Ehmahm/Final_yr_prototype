@@ -1,0 +1,21 @@
+{
+  "teacher_test": {
+    "model": "Teacher Ensemble",
+    "RMSE": 185.09075620815892,
+    "MAE": 139.54657340447736,
+    "MAPE": 1.4579218132270395,
+    "R2": 0.9813916617233714
+  },
+  "student_test": {
+    "model": "Student MLP",
+    "RMSE": 188.531112734079,
+    "MAE": 144.04071044921875,
+    "MAPE": 1.5104174613952637,
+    "R2": 0.9806934595108032
+  },
+  "size_reduction_pct": 99.49667888414123,
+  "student_params": 4225,
+  "student_latency_ms": 0.00137743561329579,
+  "teacher_latency_ms": 0.422189335364208,
+  "speedup_x": 306.50386216894424
+}
