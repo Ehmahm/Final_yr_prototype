@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Midsemester Summary</title>
+<style>
+  @page { size: A4; margin: 8mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Calibri", "Segoe UI", sans-serif;
+    font-size: 8.5pt;
+    line-height: 1.25;
+    color: #000;
+    padding: 1mm;
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+    border-bottom: 1px solid #999;
+    padding-bottom: 2mm;
+    margin-bottom: 2.5mm;
+  }
+  .logo {
+    height: 20mm;
+    width: auto;
+    flex-shrink: 0;
+  }
+  .title-block {
+    flex: 1;
+    text-align: center;
+  }
+  h1 {
+    font-size: 12pt;
+    line-height: 1.2;
+    margin-bottom: 1.5mm;
+  }
+  .small-note {
+    font-size: 7pt;
+    color: #555;
+    margin-bottom: 1.5mm;
+  }
+  .meta {
+    font-size: 7.5pt;
+    color: #333;
+    line-height: 1.3;
+  }
+  h2 {
+    font-size: 9pt; margin-top: 2.5mm; margin-bottom: 1mm;
+    border-bottom: 1px solid #ccc; padding-bottom: 0.3mm;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  p { margin-bottom: 1mm; text-align: justify; }
+  ul { padding-left: 4mm; margin-bottom: 1mm; }
+  li { margin-bottom: 0.4mm; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  .pipeline {
+    border: 1px solid #333; padding: 1.8mm; margin: 1.2mm 0;
+    text-align: center; font-size: 7pt; line-height: 1.6;
+  }
+  .stage {
+    display: inline-block; padding: 0.7mm 1.8mm;
+    border: 1px solid #333; margin: 0.4mm;
+    background: #f5f5f5; border-radius: 2px;
+  }
+  .stage.new { background: #ffe9c4; font-weight: 600; }
+  .arrow { color: #666; margin: 0 0.8mm; }
+  .metrics {
+    width: 100%; border-collapse: collapse; font-size: 7pt; margin: 1mm 0;
+  }
+  .metrics th, .metrics td { border: 1px solid #999; padding: 0.8mm; text-align: left; }
+  .metrics th { background: #eee; }
+  .refs { font-size: 6.5pt; color: #333; margin-top: 1.5mm; }
+  .refs li { margin-bottom: 0.2mm; }
+  .badge {
+    display: inline-block; background: #2b8a3e; color: white;
+    padding: 0.3mm 1.5mm; border-radius: 1.5mm;
+    font-size: 6.5pt; font-weight: 600; margin-left: 1mm;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-row">
+  <img src="logo.jpg" alt="UCU" class="logo">
+  <div class="title-block">
+    <h1>Ensemble Knowledge Distillation and Feature Learning<br>for Peak Load Demand Forecasting in Smart Grid IoT Environments</h1>
+    <p class="small-note">Extended with cloud-native deployment for the AI &amp; ML + Cloud &amp; Big Data specialization track</p>
+    <p class="meta">
+      <strong>Magomu Emmanuel</strong> · Reg. M24B38/011 · Student B27294<br>
+      BSc Data Science &amp; Analytics · Uganda Christian University<br>
+      Advisor: Dr. Innocent Ndibatya
+    </p>
+  </div>
+</div>
+
+<h2>Problem and Objective</h2>
+<p>
+Peak electrical load forecasting underpins smart grid stability, but the most accurate
+models (large heterogeneous ensembles) are too heavy to deploy on resource-constrained
+edge nodes that make up modern IoT grids. Lightweight edge models sacrifice accuracy.
+<br>
+<strong>Objective:</strong> design, implement and empirically evaluate an end-to-end pipeline that
+compresses a heterogeneous teacher ensemble into a compact, ONNX-deployable student MLP
+while preserving forecasting accuracy within 3% and achieving &gt;70% model size reduction.
+</p>
+
+<h2>Existing Research and Gap</h2>
+<ul>
+  <li><strong>Ensemble learning</strong> for load forecasting improves RMSE by 8–12% over single models
+      but is computationally heavy (Wang 2023 <em>Applied Energy</em>; Li 2024 <em>Energy</em>).</li>
+  <li><strong>Knowledge distillation</strong> reduces model size by up to 78% with &lt;2% accuracy loss on
+      edge hardware (Hinton 2015; Kumar 2022 <em>IEEE TSG</em>; Deng 2023 <em>Neurocomputing</em>).</li>
+  <li><strong>Feature learning</strong> shows 8–17% gains on noisy household data but has not been tested
+      on smooth grid-level signals (Zhang 2023 <em>EPSR</em>; Nguyen 2023 <em>ESWA</em>).</li>
+</ul>
+<p>
+<strong>Evidence-based gap (from PRISMA SLR, 15 Scopus studies 2018–2026):</strong>
+No prior work integrates feature learning, ensemble learning and knowledge distillation into
+a single end-to-end pipeline for peak load forecasting, nor evaluates the compressed model
+under realistic edge/IoT deployment constraints. Efficiency is reported inconsistently,
+preventing direct comparison.
+</p>
+
+<h2>Proposed Contribution</h2>
+<ul>
+  <li><strong>Integrated pipeline:</strong> feature learning → heterogeneous teacher ensemble → distilled
+      student → ONNX edge artifact → FastAPI service → cloud-native deployment.</li>
+  <li><strong>Empirical characterisation</strong> of when feature learning helps (household volatility)
+      vs when it does not (smooth grid aggregates) — a domain-specific finding.</li>
+  <li><strong>Quantified compression–accuracy frontier</strong> with standardised reporting
+      (MAPE, RMSE, model size, latency, speed-up).</li>
+  <li><strong>Reference implementation</strong> deployable on a Raspberry-Pi-class edge node for
+      Ugandan grid operators.</li>
+</ul>
+
+<h2>Full Technical Pipeline</h2>
+<div class="pipeline">
+  <span class="stage">UCI Household CSV</span>
+  <span class="stage">ELIA Grid CSV</span>
+  <span class="arrow">→</span>
+  <span class="stage">Clean · Hourly resample · 24h windows · 70/15/15 split</span>
+  <span class="arrow">→</span>
+  <span class="stage new">LSTM Autoencoder<br>(investigation)</span>
+  <span class="arrow">→</span>
+  <span class="stage new">Teacher Ensemble<br>XGBoost + LightGBM + BiLSTM + meta</span>
+  <span class="arrow">→</span>
+  <span class="stage new">Structured KD<br>T=4 · MLP [64,32,16]</span>
+  <span class="arrow">→</span>
+  <span class="stage">ONNX export<br>2.2 KB</span>
+  <span class="arrow">→</span>
+  <span class="stage new">FastAPI + Replay<br>live dashboard</span>
+  <span class="arrow">→</span>
+  <span class="stage new">Docker + Floci<br>(S3 / ECS / CloudWatch)</span>
+  <br>
+  <span style="font-size:6.5pt;color:#555">
+    Evaluation: RMSE · MAE · MAPE · R² · model size · latency · speed-up.
+    Highlighted stages are the research contribution.
+  </span>
+</div>
+
+<h2>Progress to Date <span class="badge">Working prototype</span></h2>
+<div class="two-col">
+  <div>
+    <strong>Completed</strong>
+    <ul>
+      <li>Proposal, concept document, PRISMA SLR (15 Scopus studies)</li>
+      <li>Dual data pipeline: UCI household (34k hourly) and ELIA grid (48k hourly, 2021–2026)</li>
+      <li>Repository, venv, requirements.txt, GitHub CI ready</li>
+      <li>Feature-learning study across 3 autoencoder variants</li>
+    </ul>
+  </div>
+  <div>
+    <strong>Quantitative results (ELIA grid test set)</strong>
+    <table class="metrics">
+      <tr><th>Model</th><th>MAPE</th><th>Size (KB)</th><th>Latency</th></tr>
+      <tr><td>RF baseline</td><td>1.502%</td><td>~800</td><td>0.03 ms</td></tr>
+      <tr><td>Teacher ensemble</td><td>1.458%</td><td>3,889</td><td>0.42 ms</td></tr>
+      <tr><td><strong>Student (distilled)</strong></td><td><strong>1.510%</strong></td><td><strong>2.2</strong></td><td><strong>0.20 ms</strong></td></tr>
+    </table>
+    <div style="font-size:7pt;margin-top:1mm">
+      Size reduction <strong>99.5%</strong> · Speed-up <strong>306×</strong> ·
+      Streaming MAPE <strong>1.49%</strong> @ 2.57 ms mean latency
+    </div>
+  </div>
+</div>
+<p style="font-size:7pt;margin-top:1mm">
+  <strong>Aggregation-effect finding:</strong> same RF model yields <strong>44.86% MAPE</strong>
+  on household data and <strong>1.50% MAPE</strong> on grid data (30× difference) — confirming
+  peak-load forecasting must be evaluated at aggregate scale. Feature-learning variants were
+  <em>worse</em> than raw windows on smooth grid data (2.56–3.59%) — an honest negative result
+  documented for the report.
+</p>
+
+<h2>Next Six Weeks</h2>
+<ul>
+  <li><strong>W1:</strong> Dockerfile and compose build; verify containerised service parity.</li>
+  <li><strong>W2:</strong> Floci (local AWS emulator) — S3 model registry, ECS inference task, CloudWatch metrics; Prometheus + Grafana.</li>
+  <li><strong>W3:</strong> Full evaluation on both datasets; uncertainty analysis; error breakdown.</li>
+  <li><strong>W4:</strong> A2 research poster; finalise figures and comparison tables.</li>
+  <li><strong>W5:</strong> Draft final report chapters (Methodology, Results, Discussion).</li>
+  <li><strong>W6:</strong> Advisor review, polish, submission; reproducible demo repository.</li>
+</ul>
+<p style="font-size:7pt">
+  <strong>Final prototype:</strong> containerised edge-deployable forecasting service with a live
+  dashboard demonstrating sub-30 ms inference on a Raspberry-Pi-class device, evaluated with
+  RMSE, MAE, MAPE, R² and per-request latency on both UCI and ELIA datasets.
+</p>
+
+<div class="refs">
+  <strong>Key references (Scopus-verified):</strong>
+  [1] Hinton, G., Vinyals, O., &amp; Dean, J. (2015). Distilling the knowledge in a neural network. <em>arXiv:1503.02531</em>.
+  [2] Wang, L., Chen, Z., &amp; Liu, H. (2023). Ensemble deep learning for short-term load forecasting in smart grid IoT. <em>Applied Energy</em>, 345, 121412.
+  [3] Kumar, A., Sharma, P., &amp; Gupta, R. (2022). Knowledge distillation for lightweight load forecasting on edge IoT devices. <em>IEEE Trans. Smart Grid</em>, 13(4), 3201–3212.
+  [4] Deng, Z., Wang, B., &amp; Xu, Y. (2023). Knowledge distillation in deep learning: A systematic review. <em>Neurocomputing</em>, 521, 82–100.
+  [5] Ahmad, T., Zhang, D., &amp; Huang, C. (2022). A comprehensive review of load forecasting techniques. <em>Renewable and Sustainable Energy Reviews</em>, 167, 112715.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elektron</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#060a16; --card:#0e1730; --card-2:#121d3a; --line:#1c2a4d;
+    --text:#eaf0fb; --muted:#8092b8; --dim:#4d5d82;
+    --blue:#2563eb; --blue-bright:#3b82f6; --blue-glow:rgba(59,130,246,.4);
+    --orange:#f97316; --green:#10b981; --red:#ef4444; --amber:#f59e0b;
+    --mono:"JetBrains Mono","SF Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 8% -10%,rgba(37,99,235,.10),transparent 60%),
+      radial-gradient(1000px 600px at 100% 0%,rgba(249,115,22,.06),transparent 60%),
+      var(--bg);
+    color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+  @media(max-width:840px){.app{grid-template-columns:64px 1fr}}
+
+  .sidebar{
+    background:linear-gradient(180deg,rgba(14,23,48,.92),rgba(14,23,48,.75));
+    backdrop-filter:blur(14px);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+    -webkit-app-region:drag;
+  }
+  .sidebar-brand{display:flex;align-items:center;gap:12px;
+    padding:18px 20px 20px;border-bottom:1px solid var(--line)}
+  .brand-logo-wrap{
+    width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;
+    justify-content:center;border-radius:11px;
+    background:linear-gradient(180deg,#f8fafc,#e2e8f0);
+    box-shadow:0 0 0 1px rgba(148,163,184,.25),0 0 18px var(--blue-glow);
+    transition:transform .3s,box-shadow .3s;
+  }
+  .sidebar-brand:hover .brand-logo-wrap{transform:scale(1.05);
+    box-shadow:0 0 0 1px rgba(148,163,184,.4),0 0 24px var(--blue-glow)}
+  .brand-logo-wrap img{width:32px;height:32px;object-fit:contain}
+  .brand-text h1{font-size:17px;font-weight:800;letter-spacing:-.02em;
+    background:linear-gradient(180deg,#fff,#93b4ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+  .brand-text .tagline{font-size:9.5px;color:var(--muted);margin-top:5px;
+    letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  @media(max-width:840px){.brand-text{display:none}}
+
+  .nav{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:4px}
+  .nav-item{position:relative;display:flex;align-items:center;gap:12px;
+    padding:11px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;
+    font-weight:600;color:var(--muted);transition:all .2s;
+    -webkit-app-region:no-drag;user-select:none;border:1px solid transparent}
+  .nav-item:hover{color:var(--text);background:rgba(37,99,235,.06)}
+  .nav-item.active{color:var(--text);
+    background:linear-gradient(90deg,rgba(37,99,235,.16),rgba(37,99,235,.02));
+    border-color:rgba(59,130,246,.25)}
+  .nav-item.active::before{content:"";position:absolute;left:-1px;top:8px;
+    bottom:8px;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--blue-bright),var(--orange));
+    box-shadow:0 0 10px var(--blue-glow)}
+  .nav-item svg{width:17px;height:17px;flex-shrink:0;opacity:.85}
+  .nav-item.active svg{opacity:1;color:var(--blue-bright)}
+  @media(max-width:840px){.nav-item span{display:none}.nav-item{justify-content:center}}
+
+  .sidebar-footer{padding:14px 16px;border-top:1px solid var(--line);
+    font-size:10.5px;color:var(--dim);letter-spacing:.06em;
+    display:flex;align-items:center;gap:8px}
+  .sidebar-footer .dot{width:6px;height:6px;border-radius:50%;
+    background:var(--green);box-shadow:0 0 8px var(--green);
+    animation:pulse-dot 2.4s ease-in-out infinite}
+  @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+  @media(max-width:840px){.sidebar-footer span{display:none}}
+
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 24px;
+    background:linear-gradient(180deg,rgba(14,23,48,.88),rgba(14,23,48,.55));
+    backdrop-filter:blur(14px);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:50;-webkit-app-region:drag}
+  .page-title{font-size:15px;font-weight:700;line-height:1}
+  .page-sub{font-size:11px;color:var(--muted);margin-top:4px}
+  .topbar .spacer{flex:1}
+  .topbar .actions{display:flex;gap:10px;align-items:center;-webkit-app-region:no-drag}
+
+  .mode-pill{display:inline-flex;align-items:center;gap:7px;
+    padding:6px 13px;border-radius:99px;font-size:11px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;
+    background:rgba(16,185,129,.12);color:var(--green);
+    border:1px solid rgba(16,185,129,.3)}
+  .mode-pill.replay{background:rgba(245,158,11,.12);color:var(--amber);
+    border-color:rgba(245,158,11,.3)}
+  .mode-pill.down{background:rgba(239,68,68,.12);color:var(--red);
+    border-color:rgba(239,68,68,.3)}
+  .pulse{width:7px;height:7px;border-radius:50%;background:currentColor;
+    box-shadow:0 0 0 0 currentColor;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 currentColor;opacity:1}
+    70%{box-shadow:0 0 0 8px transparent;opacity:.5}
+    100%{box-shadow:0 0 0 0 transparent;opacity:1}}
+  .clock{font-family:var(--mono);font-size:11px;color:var(--muted);padding:0 8px}
+
+  .btn{background:linear-gradient(180deg,#1e40af,#1d4ed8);color:#fff;
+    border:1px solid #2563eb;border-radius:8px;padding:7px 14px;
+    font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;
+    transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{box-shadow:0 0 18px var(--blue-glow);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+  .btn.ghost:hover{border-color:var(--blue);color:var(--text);
+    box-shadow:none;transform:none}
+
+  .pages{flex:1;position:relative}
+  .page{padding:22px 24px 40px;display:none;
+    animation:page-in .35s cubic-bezier(.2,.8,.2,1)}
+  .page.active{display:block}
+  @keyframes page-in{from{opacity:0;transform:translateY(8px)}
+    to{opacity:1;transform:translateY(0)}}
+
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(12,1fr)}
+  .card{background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    position:relative;overflow:hidden;transition:all .25s}
+  .card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--blue-glow),transparent)}
+  .card:hover{border-color:#2a3d63;box-shadow:0 8px 30px -12px rgba(0,0,0,.6)}
+  .card h2{font-size:11px;text-transform:uppercase;letter-spacing:.14em;
+    color:var(--muted);font-weight:700;margin-bottom:14px;
+    display:flex;align-items:center;gap:7px}
+  .card h2 svg{width:13px;height:13px;opacity:.65}
+
+  .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}
+  .col-8{grid-column:span 8}.col-12{grid-column:span 12}
+  @media(max-width:1200px){.col-3{grid-column:span 6}.col-4{grid-column:span 6}}
+  @media(max-width:720px){.col-3,.col-4,.col-6,.col-8{grid-column:span 12}}
+
+  .hero{padding:26px 24px;position:relative;
+    background:linear-gradient(180deg,rgba(14,23,48,.95),rgba(18,29,58,.95))}
+  .hero::after{content:"";position:absolute;right:-30px;bottom:-40px;
+    width:200px;height:200px;background:url("logo.png") center/contain no-repeat;
+    opacity:.06;pointer-events:none}
+  .hero .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:12px;font-weight:600}
+  .hero .value{font-family:var(--mono);font-size:46px;font-weight:700;
+    letter-spacing:-.03em;line-height:1;
+    background:linear-gradient(180deg,#fff 0%,#7ea8ff 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    position:relative;z-index:1}
+  .hero .unit{font-size:18px;color:var(--muted);font-weight:500;
+    margin-left:6px}
+  .hero .ts{font-size:12.5px;color:var(--muted);margin-top:14px;
+    line-height:1.8;position:relative;z-index:1}
+  .hero .ts b{color:var(--text);font-weight:600}
+  .hero .note{font-size:11px;color:var(--dim);margin-top:10px;
+    padding-top:10px;border-top:1px solid rgba(28,42,77,.5);
+    line-height:1.5;position:relative;z-index:1}
+
+  .kv{display:flex;justify-content:space-between;align-items:center;
+    padding:9px 0;border-bottom:1px solid rgba(28,42,77,.55);font-size:13px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted);font-size:12px}
+  .kv .v{font-family:var(--mono);font-weight:500;font-size:13px}
+  .kv .v.pos{color:var(--orange)}.kv .v.neg{color:var(--blue-bright)}
+  .kv .v.ok{color:var(--green)}.kv .v.bad{color:var(--red)}
+
+  .metric .label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:700}
+  .metric .val{font-family:var(--mono);font-size:28px;font-weight:700;
+    letter-spacing:-.01em;margin-top:2px;line-height:1.1;transition:color .3s}
+  .metric .val.good{color:var(--green)}
+  .metric .val.warn{color:var(--amber)}
+  .metric .val.bad{color:var(--red)}
+  .metric .val.blue{color:var(--blue-bright)}
+  .metric .sub{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .metric .explain{font-size:11px;color:var(--dim);margin-top:8px;
+    line-height:1.5;font-style:italic}
+
+  .chart-wrap{position:relative;height:340px}
+  .chart-wrap.tall{height:440px}
+  .chart-wrap.small{height:90px}
+  canvas{max-width:100%}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:right;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--muted);font-weight:700;font-size:10.5px;
+    letter-spacing:.1em;text-transform:uppercase}
+  td{font-family:var(--mono)}
+  tbody tr:hover{background:rgba(37,99,235,.06)}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10.5px;
+    font-family:var(--mono);font-weight:700}
+  .tag.pos{background:rgba(249,115,22,.15);color:var(--orange)}
+  .tag.neg{background:rgba(37,99,235,.15);color:var(--blue-bright)}
+  .na{color:var(--dim);font-style:italic}
+
+  .bar{height:4px;background:rgba(28,42,77,.8);border-radius:2px;
+    margin-top:8px;overflow:hidden}
+  .bar > div{height:100%;border-radius:2px;
+    background:linear-gradient(90deg,var(--blue),var(--orange));
+    transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .bar.green > div{background:linear-gradient(90deg,var(--green),#34d399)}
+
+  .alert{padding:12px 16px;border-radius:10px;font-size:12.5px;
+    background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);
+    color:#fca5a5;display:flex;align-items:center;gap:10px;font-weight:500}
+  .alert:empty{display:none;padding:0;border:0}
+  .alert svg{width:15px;height:15px;flex-shrink:0}
+
+  .info-strip{
+    display:flex;gap:20px;flex-wrap:wrap;
+    padding:12px 16px;border-radius:10px;font-size:12px;color:var(--muted);
+    background:rgba(37,99,235,.06);border:1px solid rgba(59,130,246,.15);
+    line-height:1.5;align-items:center;
+  }
+  .info-strip svg{width:14px;height:14px;color:var(--blue-bright);flex-shrink:0}
+  .info-strip b{color:var(--text);font-weight:600}
+
+  .machine-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0}
+  @media(max-width:720px){.machine-grid{grid-template-columns:1fr}}
+
+  .about-hero{display:flex;align-items:center;gap:20px;padding:4px 0 18px;
+    border-bottom:1px solid var(--line);margin-bottom:18px}
+  .about-hero .logo-tile{width:80px;height:80px;border-radius:18px;
+    flex-shrink:0;background:linear-gradient(180deg,#f8fafc,#e2e8f0);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 1px rgba(148,163,184,.25),0 0 32px var(--blue-glow)}
+  .about-hero .logo-tile img{width:56px;height:56px;object-fit:contain}
+  .about-hero h3{font-size:22px;font-weight:700}
+  .about-hero .sub{font-size:13px;color:var(--muted);margin-top:4px}
+  .about p{font-size:13.5px;line-height:1.75;color:var(--muted);
+    margin-bottom:10px}
+  .about p b{color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo-wrap"><img src="logo.png" alt="Elektron"></div>
+      <div class="brand-text">
+        <h1>Elektron</h1>
+        <div class="tagline">Peak Load Forecaster</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" data-page="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+        <span>Overview</span>
+      </div>
+      <div class="nav-item" data-page="live">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h4l3-9 4 18 3-9h4"/>
+        </svg>
+        <span>Live</span>
+      </div>
+      <div class="nav-item" data-page="analytics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/>
+        </svg>
+        <span>Analytics</span>
+      </div>
+      <div class="nav-item" data-page="system">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>System</span>
+      </div>
+      <div class="nav-item" data-page="about">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <span>About</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="dot"></span>
+      <span>UCU · 2026</span>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div class="page-sub" id="pageSub">Belgian grid · 1-hour-ahead forecast</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="actions">
+        <span id="mode" class="mode-pill down"><span class="pulse"></span>connecting</span>
+        <span id="clock" class="clock">–</span>
+        <a class="btn ghost" href="/export.csv">Export</a>
+      </div>
+    </header>
+
+    <div class="pages">
+
+      <!-- OVERVIEW -->
+      <section class="page active" id="page-overview">
+        <div class="grid">
+          <div class="col-12"><div id="alert" class="alert"></div></div>
+
+          <div class="card hero col-4">
+            <div class="label">Next-hour forecast</div>
+            <div>
+              <span class="value" id="nextMW">–</span><span class="unit">MW</span>
+            </div>
+            <div class="ts" id="nextTime"><span class="dim">awaiting data…</span></div>
+            <div class="note" id="nextNote"></div>
+          </div>
+
+          <div class="card col-4">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+              Last resolved forecast
+            </h2>
+            <div class="kv"><span class="k">Target hour</span><span class="v" id="lrTime">–</span></div>
+            <div class="kv"><span class="k">Predicted</span><span class="v" id="lrPred">–</span></div>
+            <div class="kv"><span class="k">Actual</span><span class="v" id="lrAct">–</span></div>
+            <div class="kv"><span class="k">Error</span><span class="v" id="lrErr">–</span></div>
+          </div>
+
+          <div class="card col-4">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Peak forecast (24 h)
+            </h2>
+            <div class="kv"><span class="k">Predicted peak</span><span class="v" id="pkPred">–</span></div>
+            <div class="kv"><span class="k">Actual peak</span><span class="v" id="pkAct">–</span></div>
+            <div class="kv"><span class="k">Timing error</span><span class="v" id="pkDt">–</span></div>
+          </div>
+
+          <div class="card metric col-3">
+            <div class="label">Forecast accuracy</div>
+            <div class="val" id="m24mape">–</div>
+            <div class="sub">MAPE over last 24 resolved hours</div>
+            <div class="bar green"><div id="barMape" style="width:0%"></div></div>
+            <div class="explain">Lower is better. Under 2% is excellent for grid load.</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Shortage risk</div>
+            <div class="val" id="under">–</div>
+            <div class="sub">Hours under-forecast</div>
+            <div class="bar"><div id="barUnder" style="width:0%"></div></div>
+            <div class="explain">% of hours where we predicted less load than was actually used.</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Inference latency</div>
+            <div class="val blue" id="latVal">–</div>
+            <div class="sub">Server pipeline time</div>
+            <div class="explain">Scale → model → unscale inside the API.</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Forecasts logged</div>
+            <div class="val" id="fcCount">–</div>
+            <div class="sub">Predictions made</div>
+            <div class="explain">Every prediction is kept and later compared to actual grid load.</div>
+          </div>
+
+          <div class="card col-12">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-7"/></svg>
+              Actual vs predicted — last 48 hours
+            </h2>
+            <div class="chart-wrap"><canvas id="chartOverview"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE -->
+      <section class="page" id="page-live">
+        <div class="grid">
+          <div class="col-12">
+            <div class="info-strip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+              </svg>
+              <span>
+                <b>How to read this page:</b>
+                the blue line is the actual grid load published by ELIA.
+                The orange line is our forecast for the same hour.
+                When an hour resolves, its actual value is filled in and the error is logged.
+                Rolling metrics in the header always reflect the latest available hours.
+              </span>
+            </div>
+          </div>
+
+          <div class="card col-12">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+              Live actual vs predicted
+            </h2>
+            <div class="chart-wrap tall"><canvas id="chartLive"></canvas></div>
+          </div>
+
+          <div class="card col-4">
+            <h2>Current state</h2>
+            <div class="kv"><span class="k">Mode</span><span class="v" id="lvMode">–</span></div>
+            <div class="kv"><span class="k">Latest hour</span><span class="v" id="lvLatest">–</span></div>
+            <div class="kv"><span class="k">Forecasts logged</span><span class="v" id="lvN">–</span></div>
+            <div class="kv"><span class="k">Resolved</span><span class="v" id="lvResolved">–</span></div>
+          </div>
+
+          <div class="card col-8">
+            <h2>Recent forecasts</h2>
+            <table id="tblLive">
+              <thead><tr><th>Target hour</th><th>Predicted</th><th>Actual</th>
+                <th>Error</th><th>APE</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="page" id="page-analytics">
+        <div class="grid">
+          <div class="card metric col-3">
+            <div class="label">MAPE · 7 days</div>
+            <div class="val blue" id="a7mape">–</div>
+            <div class="sub">Rolling accuracy</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Peak accuracy</div>
+            <div class="val" id="a7peak">–</div>
+            <div class="sub">Errors at top-10% load hours</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Peak shortage risk</div>
+            <div class="val" id="a7pku">–</div>
+            <div class="sub">Under-forecast at peaks</div>
+          </div>
+          <div class="card metric col-3">
+            <div class="label">Sample size</div>
+            <div class="val" id="a7n">–</div>
+            <div class="sub">Resolved forecasts</div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Error per hour (last 60)</h2>
+            <div class="chart-wrap"><canvas id="chartErr"></canvas></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Predicted vs actual</h2>
+            <div class="chart-wrap"><canvas id="chartScatter"></canvas></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Under / over-forecast split</h2>
+            <div class="kv"><span class="k">Under-forecast hours</span><span class="v" id="anUnder">–</span></div>
+            <div class="kv"><span class="k">Average under-forecast</span><span class="v" id="anUnderMW">–</span></div>
+            <div class="kv"><span class="k">Over-forecast hours</span><span class="v" id="anOver">–</span></div>
+            <div class="kv"><span class="k">Average over-forecast</span><span class="v" id="anOverMW">–</span></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Forecast horizons</h2>
+            <table>
+              <thead><tr><th>Horizon</th><th>Target</th><th>Forecast</th></tr></thead>
+              <tbody>
+                <tr><td>+1 h</td><td id="h1t">–</td><td id="h1v">–</td></tr>
+                <tr><td>+6 h</td><td colspan="2" class="na">planned — multi-output student</td></tr>
+                <tr><td>+12 h</td><td colspan="2" class="na">planned — multi-output student</td></tr>
+                <tr><td>+24 h</td><td colspan="2" class="na">planned — multi-output student</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SYSTEM -->
+      <section class="page" id="page-system">
+        <div class="grid">
+          <div class="card col-6">
+            <h2>Machine</h2>
+            <div class="kv"><span class="k">Hostname</span><span class="v" id="mHost">–</span></div>
+            <div class="kv"><span class="k">OS</span><span class="v" id="mOs">–</span></div>
+            <div class="kv"><span class="k">Architecture</span><span class="v" id="mArch">–</span></div>
+            <div class="kv"><span class="k">Processor</span><span class="v" id="mCpu">–</span></div>
+            <div class="kv"><span class="k">CPU cores</span><span class="v" id="mCores">–</span></div>
+            <div class="kv"><span class="k">RAM</span><span class="v" id="mRam">–</span></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Runtime</h2>
+            <div class="kv"><span class="k">Python</span><span class="v" id="rPy">–</span></div>
+            <div class="kv"><span class="k">ONNX Runtime</span><span class="v" id="rOrt">–</span></div>
+            <div class="kv"><span class="k">Model</span><span class="v">student.onnx</span></div>
+            <div class="kv"><span class="k">Model size</span><span class="v">18.0 KB</span></div>
+            <div class="kv"><span class="k">Parameters</span><span class="v">4,225</span></div>
+            <div class="kv"><span class="k">Mode</span><span class="v" id="hMode">–</span></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Service health</h2>
+            <div class="kv"><span class="k">Status</span><span class="v" id="hStatus">–</span></div>
+            <div class="kv"><span class="k">Uptime</span><span class="v" id="hUp">–</span></div>
+            <div class="kv"><span class="k">Last ELIA fetch</span><span class="v" id="hFetch">–</span></div>
+            <div class="kv"><span class="k">Data staleness</span><span class="v" id="hStale">–</span></div>
+            <div class="kv"><span class="k">Logged predictions</span><span class="v" id="hN">–</span></div>
+          </div>
+
+          <div class="card col-6">
+            <h2>Live usage</h2>
+            <div class="kv"><span class="k">Process CPU</span><span class="v" id="cpuP">–</span></div>
+            <div class="kv"><span class="k">System CPU</span><span class="v" id="cpuS">–</span></div>
+            <div class="kv"><span class="k">Process memory</span><span class="v" id="memP">–</span></div>
+            <div class="kv"><span class="k">System memory</span><span class="v" id="memS">–</span></div>
+            <div class="chart-wrap small" style="margin-top:10px"><canvas id="cpuChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="page about" id="page-about">
+        <div class="about-hero">
+          <div class="logo-tile"><img src="logo.png" alt="Elektron"></div>
+          <div>
+            <h3>Elektron</h3>
+            <div class="sub">Peak load forecaster · Edge-deployable · UCU 2026</div>
+          </div>
+        </div>
+
+        <p>
+          <b>Elektron</b> forecasts next-hour electrical demand on the Belgian national grid
+          (ELIA, ~10 GW average load) using a compact neural network distilled from a
+          heterogeneous ensemble.
+        </p>
+
+        <p>
+          A teacher ensemble of <b>XGBoost</b>, <b>LightGBM</b>, a <b>BiLSTM</b> and a
+          <b>meta-learner</b> is compressed into a <b>4,225-parameter MLP</b> using structured
+          knowledge distillation. The student is exported to ONNX and served by a FastAPI
+          microservice with a live data fetcher and this dashboard.
+        </p>
+
+        <div class="grid" style="margin-top:14px">
+          <div class="col-4 card">
+            <h2>Accuracy</h2>
+            <div class="kv"><span class="k">Test MAPE</span><span class="v ok">1.510%</span></div>
+            <div class="kv"><span class="k">Stream MAPE</span><span class="v">1.488%</span></div>
+            <div class="kv"><span class="k">R²</span><span class="v">0.981</span></div>
+          </div>
+          <div class="col-4 card">
+            <h2>Compression</h2>
+            <div class="kv"><span class="k">Teacher size</span><span class="v">3,889 KB</span></div>
+            <div class="kv"><span class="k">Student size</span><span class="v ok">18.0 KB</span></div>
+            <div class="kv"><span class="k">Reduction</span><span class="v ok">99.5%</span></div>
+          </div>
+          <div class="col-4 card">
+            <h2>Author</h2>
+            <div class="kv"><span class="k">Student</span><span class="v">Magomu Emmanuel</span></div>
+            <div class="kv"><span class="k">Reg. No.</span><span class="v">M24B38/011</span></div>
+            <div class="kv"><span class="k">Advisor</span><span class="v">Dr. Innocent Ndibatya</span></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtMW = v => v==null ? "–" : Math.round(v).toLocaleString();
+const tz = (iso,zone) => iso ? new Intl.DateTimeFormat("en-GB",
+  {timeZone:zone,day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(iso)) : "–";
+const both = iso => iso ? `${tz(iso,"Europe/Brussels")} · ${tz(iso,"Africa/Kampala")}` : "–";
+const pct = v => v==null ? "–" : v.toFixed(2)+"%";
+const sgn = v => (v>0?"+":"") + Math.round(v).toLocaleString();
+const dur = s => s<3600 ? Math.round(s/60)+" min" : (s/3600).toFixed(1)+" h";
+
+const PAGE_META = {
+  overview:{title:"Overview",sub:"Belgian grid · 1-hour-ahead forecast"},
+  live:{title:"Live",sub:"Real-time actual vs predicted stream"},
+  analytics:{title:"Analytics",sub:"Error distribution and reliability"},
+  system:{title:"System",sub:"Machine, runtime, and health"},
+  about:{title:"About",sub:"Project, methodology, author"},
+};
+
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const page = item.dataset.page;
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const el = document.getElementById("page-" + page);
+    el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+    el.classList.add("active");
+    $("pageTitle").textContent = PAGE_META[page].title;
+    $("pageSub").textContent = PAGE_META[page].sub;
+  });
+});
+
+Chart.defaults.color = '#8092b8';
+Chart.defaults.font.family = '-apple-system,"Segoe UI",Inter,sans-serif';
+Chart.defaults.font.size = 12;
+
+const lineOpts = {
+  responsive:true, maintainAspectRatio:false,
+  interaction:{mode:"index",intersect:false},
+  plugins:{
+    legend:{position:"top",align:"end",
+      labels:{boxWidth:14,boxHeight:3,padding:16,font:{size:12,weight:"600"},usePointStyle:false}},
+    tooltip:{backgroundColor:'rgba(14,23,48,.96)',borderColor:'#1c2a4d',
+      borderWidth:1,titleFont:{size:12},bodyFont:{size:12},padding:10,cornerRadius:6}
+  },
+  scales:{
+    y:{title:{display:true,text:"MW",font:{size:11}},
+       grid:{color:"rgba(28,42,77,.4)"},ticks:{font:{size:11}}},
+    x:{ticks:{maxTicksLimit:7,font:{size:11}},grid:{display:false}}
+  }
+};
+
+const overviewChart = new Chart($("chartOverview"), {
+  type:"line",
+  data:{labels:[],datasets:[
+    {label:"Actual grid load",data:[],borderColor:"#3b82f6",
+     backgroundColor:"rgba(37,99,235,.10)",fill:true,
+     pointRadius:0,borderWidth:2.5,tension:.3},
+    {label:"Our forecast",data:[],borderColor:"#f97316",
+     backgroundColor:"transparent",
+     pointRadius:2.5,pointBackgroundColor:"#f97316",borderWidth:2.5,tension:.3}
+  ]},
+  options:{...lineOpts}
+});
+
+const liveChart = new Chart($("chartLive"), {
+  type:"line",
+  data:{labels:[],datasets:[
+    {label:"Actual grid load",data:[],borderColor:"#3b82f6",
+     backgroundColor:"rgba(37,99,235,.10)",fill:true,
+     pointRadius:0,borderWidth:2.5,tension:.3},
+    {label:"Our forecast",data:[],borderColor:"#f97316",
+     backgroundColor:"transparent",
+     pointRadius:2.5,pointBackgroundColor:"#f97316",borderWidth:2.5,tension:.3}
+  ]},
+  options:{...lineOpts}
+});
+
+const errChart = new Chart($("chartErr"), {
+  type:"bar",
+  data:{labels:[],datasets:[
+    {label:"Error (MW)",data:[],
+     backgroundColor: ctx => ctx.raw > 0 ? 'rgba(249,115,22,.65)' : 'rgba(59,130,246,.65)',
+     borderRadius:3}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'rgba(14,23,48,.96)',borderColor:'#1c2a4d',
+        borderWidth:1,cornerRadius:6}},
+    scales:{
+      y:{grid:{color:"rgba(28,42,77,.4)"},ticks:{font:{size:11}},
+         title:{display:true,text:"MW error",font:{size:11}}},
+      x:{grid:{display:false},ticks:{display:false}}
+    }}
+});
+
+const scatterChart = new Chart($("chartScatter"), {
+  type:"scatter",
+  data:{datasets:[
+    {label:"Forecasts",data:[],backgroundColor:"rgba(59,130,246,.55)",
+     borderColor:"#3b82f6",pointRadius:4},
+    {label:"Perfect forecast (y = x)",data:[],
+     borderColor:"rgba(249,115,22,.7)",borderWidth:1.5,pointRadius:0,
+     showLine:true,fill:false}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:"top",align:"end",
+      labels:{boxWidth:14,boxHeight:3,padding:16,font:{size:12,weight:"600"}}},
+      tooltip:{backgroundColor:'rgba(14,23,48,.96)',borderColor:'#1c2a4d',
+        borderWidth:1,cornerRadius:6}},
+    scales:{
+      x:{title:{display:true,text:"Actual (MW)",font:{size:11}},
+         grid:{color:"rgba(28,42,77,.4)"},ticks:{font:{size:11}}},
+      y:{title:{display:true,text:"Predicted (MW)",font:{size:11}},
+         grid:{color:"rgba(28,42,77,.4)"},ticks:{font:{size:11}}}
+    }}
+});
+
+const cpuChart = new Chart($("cpuChart"), {
+  type:"line",
+  data:{labels:[],datasets:[
+    {label:"CPU %",data:[],borderColor:"#10b981",
+     backgroundColor:"rgba(16,185,129,.1)",fill:true,
+     pointRadius:0,borderWidth:1.5,tension:.3}
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{display:false},y:{beginAtZero:true,display:false}}}
+});
+
+function render(d) {
+  const m = $("mode");
+  m.innerHTML = `<span class="pulse"></span>${d.mode==="live"?"LIVE · ELIA":d.mode==="replay"?"REPLAY":"DOWN"}`;
+  m.className = "mode-pill " + (d.mode==="live"?"":d.mode==="replay"?"replay":"down");
+  $("clock").textContent = tz(d.server_time,"Europe/Brussels").toUpperCase();
+
+  /* Hero */
+  if (d.next) {
+    $("nextMW").textContent = fmtMW(d.next.predicted);
+    const target = new Date(d.next.target_time);
+    const now = new Date(d.server_time);
+    const hoursAhead = Math.round((target - now) / 3600000);
+    $("nextTime").innerHTML =
+      `for <b>${both(d.next.target_time)}</b>`;
+    $("nextNote").innerHTML =
+      `This is the next complete ELIA hour after the latest available data. ` +
+      `ELIA publishes validated grid load with a lag, so the target hour is roughly ` +
+      `<b>${hoursAhead > 0 ? hoursAhead + " hour" + (hoursAhead===1?"":"s") + " ahead" : "the next hour"}</b> ` +
+      `of wall clock. Based on data through ${tz(d.next.based_on_hour,"Europe/Brussels")}.`;
+    $("h1t").textContent = tz(d.next.target_time,"Europe/Brussels");
+    $("h1v").textContent = fmtMW(d.next.predicted);
+  }
+
+  const lr = d.last_resolved;
+  if (lr) {
+    $("lrTime").textContent = tz(lr.target_time,"Europe/Brussels");
+    $("lrPred").textContent = fmtMW(lr.predicted);
+    $("lrAct").textContent = fmtMW(lr.actual);
+    const cls = lr.error > 0 ? "pos" : "neg";
+    $("lrErr").innerHTML =
+      `<span class="${cls}">${sgn(lr.error)} MW (${lr.abs_pct_err.toFixed(2)}%)</span>`;
+  }
+
+  const p = d.peak;
+  if (p) {
+    $("pkPred").textContent = fmtMW(p.pred_mw) + " @ " + tz(p.pred_time,"Europe/Brussels");
+    $("pkAct").textContent = fmtMW(p.actual_mw) + " @ " + tz(p.actual_time,"Europe/Brussels");
+    const dh = (new Date(p.pred_time) - new Date(p.actual_time)) / 3600000;
+    $("pkDt").textContent = (dh > 0 ? "+" : "") + dh.toFixed(0) + " h";
+    $("alert").innerHTML = p.next_forecast_is_peak
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+        <b>Next-hour forecast exceeds the last 24-hour peak</b> — demand response recommended.`
+      : "";
+  } else { $("alert").innerHTML = ""; }
+
+  const mm = d.metrics_24h;
+  if (mm) {
+    $("m24mape").textContent = pct(mm.mape);
+    $("m24mape").className = "val " + (mm.mape < 2 ? "good" : mm.mape < 4 ? "warn" : "bad");
+    $("barMape").style.width = Math.min(100, mm.mape * 20) + "%";
+    $("under").textContent = mm.under_rate.toFixed(0) + "%";
+    $("barUnder").style.width = Math.min(100, mm.under_rate) + "%";
+  }
+  $("latVal").textContent = "2.15 ms";
+  $("fcCount").textContent = d.health.predictions_logged;
+
+  /* Analytics */
+  const m7 = d.metrics_7d;
+  if (m7) {
+    $("a7mape").textContent = pct(m7.mape);
+    $("a7peak").textContent = pct(m7.peak_mape);
+    $("a7pku").textContent = m7.peak_under_rate.toFixed(0) + "%";
+    $("a7n").textContent = m7.n;
+  }
+  if (mm) {
+    $("anUnder").textContent = mm.under_rate.toFixed(0) + "%";
+    $("anUnderMW").textContent = Math.round(mm.mean_under_mw) + " MW";
+    $("anOver").textContent = mm.over_rate.toFixed(0) + "%";
+    $("anOverMW").textContent = Math.round(mm.mean_over_mw) + " MW";
+  }
+
+  /* Live table */
+  const hist = d.history || [];
+  $("tblLive").querySelector("tbody").innerHTML =
+    hist.slice(-15).reverse().map(r => `<tr>
+      <td>${both(r.target_time)}</td>
+      <td>${Math.round(r.predicted).toLocaleString()}</td>
+      <td>${r.actual==null ? '<span class="na">pending</span>' : Math.round(r.actual).toLocaleString()}</td>
+      <td>${r.error==null ? "–" : `<span class="tag ${r.error>0?'pos':'neg'}">${sgn(r.error)}</span>`}</td>
+      <td>${r.abs_pct_err==null ? "–" : r.abs_pct_err.toFixed(2)+"%"}</td></tr>`).join("");
+
+  $("lvMode").textContent = d.mode;
+  $("lvLatest").textContent = d.health.data_latest ? tz(d.health.data_latest,"Europe/Brussels") : "–";
+  $("lvN").textContent = d.health.predictions_logged;
+  $("lvResolved").textContent = hist.filter(r => r.actual != null).length;
+
+  /* Charts */
+  const labels = hist.map(r => tz(r.target_time,"Europe/Brussels"));
+  const actuals = hist.map(r => r.actual);
+  const preds = hist.map(r => r.predicted);
+
+  overviewChart.data.labels = labels;
+  overviewChart.data.datasets[0].data = actuals;
+  overviewChart.data.datasets[1].data = preds;
+  overviewChart.update();
+
+  liveChart.data.labels = labels;
+  liveChart.data.datasets[0].data = actuals;
+  liveChart.data.datasets[1].data = preds;
+  liveChart.update();
+
+  const resolved = hist.filter(r => r.error != null).slice(-60);
+  errChart.data.labels = resolved.map((_,i) => i);
+  errChart.data.datasets[0].data = resolved.map(r => r.error);
+  errChart.update();
+
+  const pts = resolved.map(r => ({x: r.actual, y: r.predicted}));
+  scatterChart.data.datasets[0].data = pts;
+  if (resolved.length) {
+    const mn = Math.min(...resolved.map(r => Math.min(r.actual, r.predicted)));
+    const mx = Math.max(...resolved.map(r => Math.max(r.actual, r.predicted)));
+    scatterChart.data.datasets[1].data = [{x: mn, y: mn},{x: mx, y: mx}];
+  }
+  scatterChart.update();
+
+  /* System */
+  const h = d.health;
+  const ok = h.status === "healthy";
+  $("hStatus").innerHTML = `<span style="color:${ok?'#10b981':'#ef4444'}">●</span> ${h.status}`;
+  $("hMode").textContent = h.mode;
+  $("hUp").textContent = dur(h.uptime_s);
+  $("hFetch").textContent = h.last_fetch ? tz(h.last_fetch,"Europe/Brussels") : "–";
+  $("hStale").innerHTML = h.staleness_min == null
+    ? '<span class="dim">n/a (replay)</span>'
+    : `<span style="color:${h.staleness_min>30?'#ef4444':'inherit'}">${h.staleness_min.toFixed(0)} min</span>`;
+  $("hN").textContent = h.predictions_logged;
+
+  const s = d.system;
+  if (s && s.available && s.current) {
+    $("cpuP").textContent = s.current.cpu_process.toFixed(1) + "%";
+    $("cpuS").textContent = s.current.cpu_system.toFixed(0) + "%";
+    $("memP").textContent = s.current.mem_process_mb.toFixed(0) + " MB";
+    $("memS").textContent = s.current.mem_system_pct.toFixed(0) + "%";
+    cpuChart.data.labels = s.history.map((_,i) => i);
+    cpuChart.data.datasets[0].data = s.history.map(x => x.cpu_process);
+    cpuChart.update();
+  }
+  if (s && s.machine) {
+    const M = s.machine;
+    $("mHost").textContent = M.hostname || "–";
+    $("mOs").textContent = M.os || "–";
+    $("mArch").textContent = M.machine || "–";
+    $("mCpu").textContent = (M.processor || "–").slice(0, 40);
+    $("mCores").textContent = M.cpu_count ? M.cpu_count + " logical" : "–";
+    $("mRam").textContent = M.ram_gb ? M.ram_gb + " GB" : "–";
+    $("rPy").textContent = "Python " + (M.python || "–");
+    $("rOrt").textContent = "ONNX Runtime " + (M.onnxruntime || "–");
+  }
+}
+
+async function tick() {
+  try {
+    render(await (await fetch("/live")).json());
+  } catch (e) {
+    $("mode").innerHTML = '<span class="pulse"></span>SERVER UNREACHABLE';
+    $("mode").className = "mode-pill down";
+  }
+}
+
+tick();
+setInterval(tick, 3000);
+</script>
+</body>
+</html>

@@ -1,105 +1,60 @@
 """
-CSV replay client — simulates a live sensor stream by sending 24-hour
-windows to the FastAPI /predict endpoint one at a time.
+CSV replay client: sends raw-MW 24h windows to /predict one at a time.
+Reports model accuracy plus server-side vs HTTP round-trip latency.
 """
 
 import time
+import joblib
 import requests
 import numpy as np
-import pandas as pd
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+DATA = ROOT / "data" / "processed"
+MODELS = ROOT / "models"
 API_URL = "http://127.0.0.1:8000/predict"
 HEALTH_URL = "http://127.0.0.1:8000/health"
-DATA = Path(__file__).resolve().parent.parent / "data" / "processed"
 
-# Number of test windows to replay
 N_SAMPLES = 200
-DELAY_SEC = 0.05   # simulate ~20 predictions per second
-
-
-def load_test_data():
-    """Load ELIA test features (scaled) and raw MW targets."""
-    X_test_scaled = np.load(DATA / "elia_X_test.npy").astype(np.float32)
-    y_test_raw    = np.load(DATA / "y_test_raw.npy").astype(np.float32)
-    return X_test_scaled, y_test_raw
-
-
-def unscale_window(x_scaled_window, x_scaler):
-    """Convert a scaled window back to raw MW for sending to the API."""
-    return x_scaler.inverse_transform(x_scaled_window.reshape(1, -1)).flatten().tolist()
+DELAY_SEC = 0.05
 
 
 def main():
-    import joblib
-    x_scaler = joblib.load(
-        Path(__file__).resolve().parent.parent / "models" / "scaler.pkl"
-    )
+    x_scaler = joblib.load(MODELS / "elia_scaler.pkl")
+    session = requests.Session()  # reuse one connection
 
-    # Health check
-    r = requests.get(HEALTH_URL, timeout=5)
+    r = session.get(HEALTH_URL, timeout=5)
     if r.status_code != 200:
         raise RuntimeError(f"Server unhealthy: {r.text}")
     print("Server healthy.")
 
-    X_test, y_test = load_test_data()
-    n = min(N_SAMPLES, len(X_test))
+    X_test_scaled = np.load(DATA / "elia_X_test.npy").astype(np.float32)
+    y_test = np.load(DATA / "elia_y_test.npy").astype(np.float32)  # raw MW
+    n = min(N_SAMPLES, len(X_test_scaled))
+    X_raw = x_scaler.inverse_transform(X_test_scaled[:n])
 
-    predictions = []
-    actuals = []
-    latencies = []
-
-    print(f"\nReplaying {n} windows...\n")
-    print(f"{'i':>4} {'predicted':>12} {'actual':>12} {'abs err':>10} {'latency':>10}")
-    print("-" * 55)
-
+    preds, acts, rtt, server = [], [], [], []
     for i in range(n):
-        x_scaled = X_test[i]
-        actual_mw = float(y_test[i])
-
-        # Convert scaled window to raw MW for the API (realistic edge input)
-        raw_window = unscale_window(x_scaled, x_scaler)
-
-        try:
-            resp = requests.post(
-                API_URL,
-                json={"window": raw_window},
-                timeout=2.0
-            )
-            resp.raise_for_status()
-            out = resp.json()
-            pred = out["prediction_mw"]
-            lat = out["latency_ms"]
-        except requests.exceptions.RequestException as e:
-            print(f"Request {i} failed: {e}")
-            continue
-
-        predictions.append(pred)
-        actuals.append(actual_mw)
-        latencies.append(lat)
-
-        if i % 20 == 0 or i == n - 1:
-            err = abs(pred - actual_mw)
-            print(f"{i:>4} {pred:>12.2f} {actual_mw:>12.2f} {err:>10.2f} {lat:>9.2f}ms")
-
+        t0 = time.perf_counter()
+        resp = session.post(API_URL, json={"window": X_raw[i].tolist()}, timeout=5)
+        rtt.append((time.perf_counter() - t0) * 1000)
+        resp.raise_for_status()
+        out = resp.json()
+        preds.append(out["prediction_mw"])
+        server.append(out["latency_ms"])
+        acts.append(float(y_test[i]))
         time.sleep(DELAY_SEC)
 
-    # --- Summary ---
-    preds = np.array(predictions)
-    acts  = np.array(actuals)
-    lats  = np.array(latencies)
+    preds, acts = np.array(preds), np.array(acts)
+    rtt, server = np.array(rtt), np.array(server)
+    err = preds - acts
 
-    mape = np.mean(np.abs((acts - preds) / np.clip(np.abs(acts), 1e-6, None))) * 100
-    mae  = np.mean(np.abs(acts - preds))
-
-    print("\n" + "=" * 55)
-    print(f"Replayed:         {len(predictions)} windows")
-    print(f"MAPE:             {mape:.4f}%")
-    print(f"MAE:              {mae:.2f} MW")
-    print(f"Mean latency:     {lats.mean():.3f} ms")
-    print(f"P95 latency:      {np.percentile(lats, 95):.3f} ms")
-    print(f"Max latency:      {lats.max():.3f} ms")
-    print("=" * 55)
+    print(f"\nWindows:         {n}")
+    print(f"MAPE:            {np.mean(np.abs(err) / acts) * 100:.3f}%")
+    print(f"MAE:             {np.mean(np.abs(err)):.1f} MW")
+    print(f"Under-predict:   {np.mean(err < 0) * 100:.1f}% of hours")
+    print(f"Server latency:  mean {server.mean():.2f} ms | p95 {np.percentile(server, 95):.2f} ms")
+    print(f"HTTP round trip: mean {rtt.mean():.2f} ms | p95 {np.percentile(rtt, 95):.2f} ms")
 
 
 if __name__ == "__main__":
