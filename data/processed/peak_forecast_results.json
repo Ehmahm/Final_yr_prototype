@@ -1,0 +1,205 @@
+{
+  "dataset": {
+    "rows_total": 191979,
+    "n_features": 56,
+    "horizons": [
+      1,
+      6,
+      12,
+      24
+    ],
+    "target": "max(load[t+1 .. t+h]) MW",
+    "train_rows": 134637,
+    "val_rows": 28669,
+    "test_rows": 28673,
+    "test_span": [
+      "2025-09-04 22:00:00+00:00",
+      "2026-06-30 23:00:00+00:00"
+    ]
+  },
+  "objective": {
+    "tau": 0.85,
+    "teacher": "pinball/quantile",
+    "student_hard_term": "pinball",
+    "rationale": "under-predicting a peak is the costly error for an operator alert"
+  },
+  "teacher": {
+    "members": [
+      "XGBoost",
+      "LightGBM"
+    ],
+    "fit_seconds": 262.5,
+    "epochs_run": 112
+  },
+  "student": {
+    "params": 5761,
+    "hidden": [
+      64,
+      32
+    ],
+    "kd_hard_label_weight": 0.2
+  },
+  "per_horizon_test": [
+    {
+      "persistence": {
+        "horizon_h": 1,
+        "n": 7178,
+        "MAE_MW": 1580.4589244915019,
+        "RMSE_MW": 1925.3690845959975,
+        "MAPE_pct": 18.149686306832592,
+        "bias_MW": 1553.4192755642239,
+        "under_predict_pct": 5.252159375870716,
+        "coverage_pct": 94.74784062412928,
+        "mean_shortfall_MW": 13.519824463638898,
+        "top10pct_MAPE_pct": 3.6965721331295773
+      },
+      "teacher": {
+        "horizon_h": 1,
+        "n": 7178,
+        "MAE_MW": 193.2812908819543,
+        "RMSE_MW": 247.66046955704914,
+        "MAPE_pct": 2.0717151696621814,
+        "bias_MW": 148.68937555039423,
+        "under_predict_pct": 19.78266926720535,
+        "coverage_pct": 80.21733073279465,
+        "mean_shortfall_MW": 22.29595766578005,
+        "top10pct_MAPE_pct": 1.2761455019930332
+      },
+      "student": {
+        "horizon_h": 1,
+        "n": 7178,
+        "MAE_MW": 191.50988822182362,
+        "RMSE_MW": 245.02084198163362,
+        "MAPE_pct": 2.0605009306112256,
+        "bias_MW": 144.62619075321297,
+        "under_predict_pct": 20.855391473948178,
+        "coverage_pct": 79.14460852605183,
+        "mean_shortfall_MW": 23.44184873430534,
+        "top10pct_MAPE_pct": 1.1856728106458299
+      }
+    },
+    {
+      "persistence": {
+        "horizon_h": 6,
+        "n": 7173,
+        "MAE_MW": 1019.3986905757703,
+        "RMSE_MW": 1308.4281091623232,
+        "MAPE_pct": 10.731299883946342,
+        "bias_MW": 860.823705213997,
+        "under_predict_pct": 15.544402620939636,
+        "coverage_pct": 84.45559737906036,
+        "mean_shortfall_MW": 79.28749268088667,
+        "top10pct_MAPE_pct": 3.586661503975214
+      },
+      "teacher": {
+        "horizon_h": 6,
+        "n": 7173,
+        "MAE_MW": 319.1437749388634,
+        "RMSE_MW": 415.3427869597885,
+        "MAPE_pct": 3.2495307190308442,
+        "bias_MW": 203.6702260892641,
+        "under_predict_pct": 25.930572982015892,
+        "coverage_pct": 74.0694270179841,
+        "mean_shortfall_MW": 57.73677442479965,
+        "top10pct_MAPE_pct": 2.1662191285542454
+      },
+      "student": {
+        "horizon_h": 6,
+        "n": 7173,
+        "MAE_MW": 277.9401583684041,
+        "RMSE_MW": 366.6016667959191,
+        "MAPE_pct": 2.8108730468222545,
+        "bias_MW": 155.94958867018684,
+        "under_predict_pct": 27.28286630419629,
+        "coverage_pct": 72.71713369580371,
+        "mean_shortfall_MW": 60.995284849108636,
+        "top10pct_MAPE_pct": 1.9898013768962046
+      }
+    },
+    {
+      "persistence": {
+        "horizon_h": 12,
+        "n": 7167,
+        "MAE_MW": 665.9064430724152,
+        "RMSE_MW": 858.414956145792,
+        "MAPE_pct": 6.412609876935369,
+        "bias_MW": 350.8393731686898,
+        "under_predict_pct": 26.538300544160737,
+        "coverage_pct": 73.46169945583925,
+        "mean_shortfall_MW": 157.53353495186272,
+        "top10pct_MAPE_pct": 3.9510414587444114
+      },
+      "teacher": {
+        "horizon_h": 12,
+        "n": 7167,
+        "MAE_MW": 328.23681224445124,
+        "RMSE_MW": 432.61925592891464,
+        "MAPE_pct": 3.132722068107801,
+        "bias_MW": 150.6254133209288,
+        "under_predict_pct": 33.403097530347424,
+        "coverage_pct": 66.59690246965258,
+        "mean_shortfall_MW": 88.80569946176122,
+        "top10pct_MAPE_pct": 2.0878160602107934
+      },
+      "student": {
+        "horizon_h": 12,
+        "n": 7167,
+        "MAE_MW": 291.81739094166403,
+        "RMSE_MW": 384.9502008547157,
+        "MAPE_pct": 2.778145537333622,
+        "bias_MW": 100.37136932675371,
+        "under_predict_pct": 36.151806892702666,
+        "coverage_pct": 63.848193107297334,
+        "mean_shortfall_MW": 95.72301080745517,
+        "top10pct_MAPE_pct": 1.955128224402949
+      }
+    },
+    {
+      "persistence": {
+        "horizon_h": 24,
+        "n": 7155,
+        "MAE_MW": 596.8769804332635,
+        "RMSE_MW": 811.0071827382519,
+        "MAPE_pct": 5.471017124610687,
+        "bias_MW": 1.0513053808525479,
+        "under_predict_pct": 44.584206848357795,
+        "coverage_pct": 55.41579315164221,
+        "mean_shortfall_MW": 297.91283752620546,
+        "top10pct_MAPE_pct": 4.488547192811706
+      },
+      "teacher": {
+        "horizon_h": 24,
+        "n": 7155,
+        "MAE_MW": 304.97884209728704,
+        "RMSE_MW": 415.41427478262557,
+        "MAPE_pct": 2.7934763137457925,
+        "bias_MW": 53.32165952056868,
+        "under_predict_pct": 43.24248777078966,
+        "coverage_pct": 56.75751222921034,
+        "mean_shortfall_MW": 125.82859128835919,
+        "top10pct_MAPE_pct": 2.0806560432858427
+      },
+      "student": {
+        "horizon_h": 24,
+        "n": 7155,
+        "MAE_MW": 304.8746841205887,
+        "RMSE_MW": 410.5600000637315,
+        "MAPE_pct": 2.796040916120003,
+        "bias_MW": 51.962519255546844,
+        "under_predict_pct": 44.03913347309574,
+        "coverage_pct": 55.96086652690426,
+        "mean_shortfall_MW": 126.45608243252096,
+        "top10pct_MAPE_pct": 2.0451334487303985
+      }
+    }
+  ],
+  "onnx": {
+    "path": "models\\student_peak.onnx",
+    "bytes": 24801,
+    "scaling_baked_in": true,
+    "max_abs_dev_vs_pytorch_MW": 0.001953125,
+    "single_window_latency_ms_mean": 0.18110833341779653,
+    "single_window_latency_ms_p95": 0.3128349999315108,
+    "four_horizon_call_ms": 0.724
+  }
+}

@@ -13,10 +13,17 @@ __pycache__/
 data/raw/
 data/processed/*.csv
 data/processed/*.npy
+# ...but the service needs the hourly ELIA series for replay mode
+!data/processed/elia_hourly_load.csv
 
 # Models (will be regenerated)
 models/*.pkl
 models/*.onnx
+# ...but these four are what the FastAPI service loads at startup
+!models/student.onnx
+!models/student_peak.onnx
+!models/elia_scaler.pkl
+!models/elia_y_scaler.pkl
 
 # IDE
 .vscode/
@@ -30,5 +37,3 @@ __pycache__/
 *.pyc
 *.pyo
 Final_yr_prototype/
-Final_yr_prototype/
-**/.git/
